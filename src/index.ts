@@ -14,4 +14,9 @@ const plugin = {
   },
 };
 
+// Named exports for CommonJS compatibility
+export const rules = plugin.rules;
+export const configs = plugin.configs;
+
+// Default export for ESM
 export default plugin;
