@@ -1,6 +1,6 @@
 import { correctArgsPosition } from './rules/correct-args-position';
 
-export = {
+const plugin = {
   rules: {
     'correct-args-position': correctArgsPosition,
   },
@@ -13,3 +13,5 @@ export = {
     },
   },
 };
+
+export default plugin;
