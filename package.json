@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-pino",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ESLint plugin to enforce correct pino logger usage patterns",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
