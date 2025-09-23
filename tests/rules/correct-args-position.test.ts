@@ -45,6 +45,11 @@ ruleTester.run('correct-args-position', correctArgsPosition, {
     "this.logger.error(error, 'Error in method')",
     "this.logger.info({userId: 123}, 'User action')",
     
+    // String interpolation patterns (correct - string first with interpolation values)
+    "logger.info('Hello %s', name)",
+    "logger.error('Error code: %d', errorCode)",
+    "logger.debug('User %s has %d points', username, points)",
+    
     // Non-pino method calls should be ignored
     "someOtherLogger.info('message', {data: 'test'})",
     "console.log('message', {data: 'test'})",

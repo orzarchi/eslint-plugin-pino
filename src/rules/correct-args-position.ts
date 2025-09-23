@@ -96,6 +96,14 @@ export const correctArgsPosition: Rule.RuleModule = {
       return isStringLiteral(node) || isTemplateLiteral(node);
     }
 
+    function hasInterpolationMarkers(node: Node): boolean {
+      if (node.type === 'Literal' && typeof node.value === 'string') {
+        // Check for common interpolation markers used by Pino/printf-style formatting
+        return /%[sdioO%]/.test(node.value);
+      }
+      return false;
+    }
+
     function isNullish(node: Node): boolean {
       return (node.type === 'Literal' && (node.value === null || node.value === undefined)) ||
              (node.type === 'Identifier' && node.name === 'undefined');
@@ -138,10 +146,12 @@ export const correctArgsPosition: Rule.RuleModule = {
         const methodName = getMethodName(node);
         
         // Check if first argument is string and second is non-string (need to swap)
+        // But skip if the string has interpolation markers (valid Pino pattern)
         const needsReorder = args.length >= 2 && 
                            isStringLike(args[0]) && 
                            !isStringLike(args[1]) && 
-                           !isNullish(args[1]);
+                           !isNullish(args[1]) &&
+                           !hasInterpolationMarkers(args[0]);
 
         if (needsReorder) {
           const correctUsage = generateCorrectUsage(args);
