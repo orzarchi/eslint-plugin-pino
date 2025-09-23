@@ -96,27 +96,32 @@ export const correctArgsPosition: Rule.RuleModule = {
       return isStringLiteral(node) || isTemplateLiteral(node);
     }
 
+    function isNullish(node: Node): boolean {
+      return (node.type === 'Literal' && (node.value === null || node.value === undefined)) ||
+             (node.type === 'Identifier' && node.name === 'undefined');
+    }
+
     function getMethodName(node: CallExpression): string {
       const memberExpr = node.callee as MemberExpression;
       return (memberExpr.property as Identifier).name;
     }
 
     function generateCorrectUsage(args: Node[]): string {
-      const objectArgs = args.filter(isObjectExpression);
-      const stringArgs = args.filter(isStringLike);
-      const otherArgs = args.filter(arg => !isObjectExpression(arg) && !isStringLike(arg));
-
+      // Since we only swap first two arguments, show what the corrected first two should look like
       const parts: string[] = [];
       
-      if (objectArgs.length > 0) {
+      // First argument should be the non-string (second original argument)
+      if (isObjectExpression(args[1])) {
         parts.push('{...}');
+      } else {
+        parts.push('data');
       }
       
-      if (stringArgs.length > 0) {
-        parts.push('"message"');
-      }
+      // Second argument should be the string (first original argument)
+      parts.push('"message"');
       
-      if (otherArgs.length > 0) {
+      // If there are more arguments, show ellipsis
+      if (args.length > 2) {
         parts.push('...');
       }
 
@@ -132,21 +137,13 @@ export const correctArgsPosition: Rule.RuleModule = {
         const args = node.arguments;
         const methodName = getMethodName(node);
         
-        // Find first object and first string argument positions
-        let firstObjectIndex = -1;
-        let firstStringIndex = -1;
-        
-        for (let i = 0; i < args.length; i++) {
-          if (firstObjectIndex === -1 && isObjectExpression(args[i])) {
-            firstObjectIndex = i;
-          }
-          if (firstStringIndex === -1 && isStringLike(args[i])) {
-            firstStringIndex = i;
-          }
-        }
+        // Check if first argument is string and second is non-string (need to swap)
+        const needsReorder = args.length >= 2 && 
+                           isStringLike(args[0]) && 
+                           !isStringLike(args[1]) && 
+                           !isNullish(args[1]);
 
-        // If we have both object and string, object should come first
-        if (firstObjectIndex !== -1 && firstStringIndex !== -1 && firstObjectIndex > firstStringIndex) {
+        if (needsReorder) {
           const correctUsage = generateCorrectUsage(args);
           
           context.report({
@@ -157,19 +154,18 @@ export const correctArgsPosition: Rule.RuleModule = {
               correctUsage,
             },
             fix(fixer) {
-              // Generate the corrected argument list
-              const objectArgs = args.filter(isObjectExpression);
-              const stringArgs = args.filter(isStringLike);
-              const otherArgs = args.filter(arg => !isObjectExpression(arg) && !isStringLike(arg));
-              
-              const reorderedArgs = [...objectArgs, ...stringArgs, ...otherArgs];
+              // Swap first two arguments only
               const sourceCode = context.getSourceCode();
-              const argsText = reorderedArgs.map(arg => sourceCode.getText(arg)).join(', ');
+              const firstArgText = sourceCode.getText(args[0]);
+              const secondArgText = sourceCode.getText(args[1]);
               
-              return fixer.replaceTextRange(
-                [args[0].range![0], args[args.length - 1].range![1]],
-                argsText
-              );
+              // Replace first argument with second
+              const fixes = [
+                fixer.replaceText(args[0], secondArgText),
+                fixer.replaceText(args[1], firstArgText)
+              ];
+              
+              return fixes;
             },
           });
         }

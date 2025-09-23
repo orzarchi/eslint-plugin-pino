@@ -36,6 +36,15 @@ ruleTester.run('correct-args-position', correctArgsPosition, {
     "logger.child({child: true}, 'Child message')",
     "logger.log({log: true}, 'Log message')",
     
+    // Variables before messages (correct)
+    "logger.error(error, 'Error message')",
+    "logger.info(data, 'Data processed')",
+    "logger.debug(result, 'Debug info')",
+    
+    // this.logger patterns (correct)
+    "this.logger.error(error, 'Error in method')",
+    "this.logger.info({userId: 123}, 'User action')",
+    
     // Non-pino method calls should be ignored
     "someOtherLogger.info('message', {data: 'test'})",
     "console.log('message', {data: 'test'})",
@@ -104,11 +113,11 @@ ruleTester.run('correct-args-position', correctArgsPosition, {
           messageId: 'incorrectArgsPosition',
           data: {
             method: 'trace',
-            correctUsage: '{...}, "message"',
+            correctUsage: '{...}, "message", ...',
           },
         },
       ],
-      output: "logger.trace({first: 1}, {second: 2}, 'Multiple', 'strings')",
+      output: "logger.trace({first: 1}, 'Multiple', 'strings', {second: 2})",
     },
     // Test all pino methods
     {
@@ -149,6 +158,72 @@ ruleTester.run('correct-args-position', correctArgsPosition, {
         },
       ],
       output: "logger.log({logLevel: 'info'}, 'Log message')",
+    },
+    // Test error variables and other non-string arguments
+    {
+      code: "logger.error('Error adding reaction to message', error)",
+      errors: [
+        {
+          messageId: 'incorrectArgsPosition',
+          data: {
+            method: 'error',
+            correctUsage: 'data, "message"',
+          },
+        },
+      ],
+      output: "logger.error(error, 'Error adding reaction to message')",
+    },
+    {
+      code: "this.logger.error('Error adding reaction to message', error)",
+      errors: [
+        {
+          messageId: 'incorrectArgsPosition',
+          data: {
+            method: 'error',
+            correctUsage: 'data, "message"',
+          },
+        },
+      ],
+      output: "this.logger.error(error, 'Error adding reaction to message')",
+    },
+    {
+      code: "logger.info('Processing data', data, userId)",
+      errors: [
+        {
+          messageId: 'incorrectArgsPosition',
+          data: {
+            method: 'info',
+            correctUsage: 'data, "message", ...',
+          },
+        },
+      ],
+      output: "logger.info(data, 'Processing data', userId)",
+    },
+    {
+      code: "logger.debug('Result is', result)",
+      errors: [
+        {
+          messageId: 'incorrectArgsPosition',
+          data: {
+            method: 'debug',
+            correctUsage: 'data, "message"',
+          },
+        },
+      ],
+      output: "logger.debug(result, 'Result is')",
+    },
+    {
+      code: "logger.warn('Warning message', err, additionalData)",
+      errors: [
+        {
+          messageId: 'incorrectArgsPosition',
+          data: {
+            method: 'warn',
+            correctUsage: 'data, "message", ...',
+          },
+        },
+      ],
+      output: "logger.warn(err, 'Warning message', additionalData)",
     },
   ],
 });

@@ -56,3 +56,4 @@ pids/
 # Temporary folders
 tmp/
 temp/
+.claude
